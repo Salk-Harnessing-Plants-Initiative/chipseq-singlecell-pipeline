@@ -1,0 +1,47 @@
+{
+  "name": "ChIP-seq & Single-Cell Pipeline (Dev)",
+  "dockerFile": "../Dockerfile",
+  "context": "..",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "REditorSupport.r",
+        "Ikuyadeu.r-lsp",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+        "redhat.vscode-yaml",
+        "yzhang.markdown-all-in-one",
+        "timonwong.shellcheck"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "r.rterm.linux": "/usr/bin/R",
+        "r.rterm.option": ["--no-save", "--no-restore"],
+        "r.lsp.enabled": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.associations": {
+          "*.R": "r",
+          "*.Rmd": "rmd",
+          "*.sh": "shellscript"
+        }
+      }
+    }
+  },
+
+  "mounts": [
+    "source=${localWorkspaceFolder}/data,target=/data,type=bind",
+    "source=${localWorkspaceFolder}/outputs,target=/outputs,type=bind",
+    "source=${localWorkspaceFolder}/references,target=/references,type=bind"
+  ],
+
+  "postCreateCommand": "echo 'ChIP-seq & Single-Cell Pipeline Dev Container Ready!' && python --version && R --version | head -1",
+
+  "remoteUser": "root",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+}

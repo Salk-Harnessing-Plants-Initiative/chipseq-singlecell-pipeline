@@ -1,0 +1,219 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+    paths:
+      - 'Dockerfile'
+      - 'scripts/**'
+      - '.github/workflows/docker-build.yml'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'Dockerfile'
+      - 'scripts/**'
+      - '.github/workflows/docker-build.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to build for'
+        required: true
+        type: choice
+        options:
+          - test
+          - prod
+        default: 'test'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-tag: ${{ steps.set-tag.outputs.tag }}
+      is-prod: ${{ steps.determine-env.outputs.is-prod }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Determine build environment
+        id: determine-env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [[ "${{ github.event_name }}" == "push" ]] && [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
+            ENV="prod"
+          else
+            ENV="test"
+          fi
+
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "is-prod=$([[ $ENV == 'prod' ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "::notice::Building for environment: $ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
+            suffix=${{ steps.determine-env.outputs.is-prod == 'false' && '-test' || '' }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ steps.determine-env.outputs.is-prod == 'true' && github.ref == 'refs/heads/main' }}
+
+      - name: Set image tag output
+        id: set-tag
+        run: |
+          TAG=$(echo '${{ steps.meta.outputs.tags }}' | head -n1)
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "::notice::Primary image tag: $TAG"
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          load: ${{ github.event_name == 'pull_request' }}
+
+      - name: Display build summary
+        run: |
+          echo "### Docker Build Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ steps.determine-env.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "**Pushed:** ${{ github.event_name != 'pull_request' }}" >> $GITHUB_STEP_SUMMARY
+
+  verify-image:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: always() && needs.build-and-push.result == 'success'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine image to test
+        id: image-ref
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "needs-build=true" >> $GITHUB_OUTPUT
+            echo "image-tag=chipseq-test" >> $GITHUB_OUTPUT
+          else
+            echo "needs-build=false" >> $GITHUB_OUTPUT
+            echo "image-tag=${{ needs.build-and-push.outputs.image-tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx (for PR builds)
+        if: steps.image-ref.outputs.needs-build == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image locally (PR only)
+        if: steps.image-ref.outputs.needs-build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: ${{ steps.image-ref.outputs.image-tag }}
+          cache-from: type=gha
+
+      - name: Test ChIP-seq tools
+        run: |
+          echo "::group::Testing ChIP-seq tools"
+          docker run --rm --entrypoint bash ${{ steps.image-ref.outputs.image-tag }} -c "
+            echo 'Testing bowtie2...' && bowtie2 --version | head -1
+            echo 'Testing samtools...' && samtools --version | head -1
+            echo 'Testing trim_galore...' && trim_galore --version | head -2
+            echo 'Testing findPeaks (HOMER)...' && which findPeaks
+            echo 'Testing fastqc...' && fastqc --version
+            echo 'Testing parallel...' && parallel --version | head -1
+          "
+          echo "::endgroup::"
+
+      - name: Test Python environment
+        run: |
+          echo "::group::Testing Python and uv"
+          docker run --rm --entrypoint bash ${{ steps.image-ref.outputs.image-tag }} -c "
+            echo 'Testing uv...' && uv --version
+            echo 'Testing Python imports...'
+            python -c 'import scanpy; import anndata; import scvi; print(\"Single-cell Python packages OK\")'
+          "
+          echo "::endgroup::"
+
+      - name: Test R environment
+        run: |
+          echo "::group::Testing R and Seurat"
+          docker run --rm --entrypoint bash ${{ steps.image-ref.outputs.image-tag }} -c "
+            Rscript -e 'library(Seurat); cat(\"Seurat version:\", as.character(packageVersion(\"Seurat\")), \"\n\")'
+          "
+          echo "::endgroup::"
+
+      - name: Test VS Code CLI
+        run: |
+          echo "::group::Testing VS Code CLI"
+          docker run --rm --entrypoint bash ${{ steps.image-ref.outputs.image-tag }} -c "
+            code --version
+          "
+          echo "::endgroup::"
+
+      - name: Test entrypoint help
+        run: |
+          docker run --rm ${{ steps.image-ref.outputs.image-tag }} help
+
+      - name: Verification summary
+        run: |
+          echo "### Image Verification :white_check_mark:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ steps.image-ref.outputs.image-tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tests Passed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ ChIP-seq tools (bowtie2, samtools, trim_galore, HOMER, fastqc)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Python environment (uv, scanpy, anndata, scvi-tools)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ R environment (Seurat)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ VS Code CLI" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Entrypoint script" >> $GITHUB_STEP_SUMMARY

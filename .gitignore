@@ -1,0 +1,56 @@
+# Data files
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.bam
+*.bam.bai
+*.sam
+*.bed
+*.bedGraph
+*.bedGraph.gz
+*.tdf
+*.h5ad
+*.h5
+*.rds
+
+# Output directories
+data/
+outputs/
+logs/
+references/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+
+# R
+.Rhistory
+.Rdata
+.RData
+.Ruserdata
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.tar
+
+# Temp files
+*.tmp
+*.temp
+tmp/
+temp/
