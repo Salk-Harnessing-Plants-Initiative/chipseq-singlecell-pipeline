@@ -132,16 +132,41 @@ seurat_obj <- RunUMAP(seurat_obj)
 
 ## RunAI Deployment
 
+Uses **RunAI CLI v2** syntax. See [docs/RUNAI_QUICK_REFERENCE.md](docs/RUNAI_QUICK_REFERENCE.md) for full reference.
+
+### Submit VS Code Tunnel Workspace
+
 ```bash
-runai submit charlotte-analysis \
+runai workspace submit vscode-tunnel \
+  --project talmo-lab \
   --image ghcr.io/salk-harnessing-plants-initiative/chipseq-singlecell-pipeline:latest \
-  --gpu 1 \
-  --cpu 16 \
-  --memory 64G \
-  --pvc data-pvc:/data \
-  --pvc ref-pvc:/references \
-  --interactive \
-  -- tunnel
+  --cpu-core-request 8 \
+  --cpu-memory-request 32G \
+  --host-path path=/hpi/path/to/data,mount=/data,mount-propagation=HostToContainer \
+  --command -- tunnel
+```
+
+### Submit ChIP-seq Analysis
+
+```bash
+runai workspace submit chipseq-analysis \
+  --project talmo-lab \
+  --image ghcr.io/salk-harnessing-plants-initiative/chipseq-singlecell-pipeline:latest \
+  --cpu-core-request 16 \
+  --cpu-memory-request 64G \
+  --host-path path=/hpi/path/to/data,mount=/data,mount-propagation=HostToContainer \
+  --host-path path=/hpi/path/to/outputs,mount=/outputs,mount-propagation=HostToContainer,readwrite \
+  --environment REFERENCE=/references/bowtie2_index \
+  --environment CPU_CORES=16 \
+  --command -- /scripts/chipseq/ChIProfiler_M00_Basic.sh
+```
+
+### Monitor and Manage Jobs
+
+```bash
+runai workspace list                              # List all workspaces
+runai workspace logs <NAME> -p talmo-lab --follow # View logs
+runai workspace delete <NAME> -p talmo-lab        # Delete workspace
 ```
 
 ## Mount Points

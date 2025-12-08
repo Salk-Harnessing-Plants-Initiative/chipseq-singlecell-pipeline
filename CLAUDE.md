@@ -42,3 +42,30 @@ Scripts in `scripts/chipseq/` should maintain compatibility with:
 - Environment variables for configuration
 - `set -euo pipefail` for safety
 - Proper quoting for paths with spaces
+
+## RunAI Integration
+
+The `.claude/skills/runai.md` skill provides RunAI CLI v2 command reference for job submission.
+
+### Available Slash Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/submit-chipseq` | Submit ChIP-seq analysis job |
+| `/submit-singlecell` | Submit single-cell analysis job |
+| `/submit-tunnel` | Submit VS Code tunnel workspace |
+| `/monitor-jobs` | Monitor RunAI job status |
+| `/cleanup-jobs` | Clean up completed/failed jobs |
+| `/docker-build` | Build Docker image locally |
+| `/docker-test` | Test Docker container |
+| `/validate-bash` | Validate shell scripts with ShellCheck |
+
+### OpenSpec Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/openspec:proposal` | Scaffold new change proposal |
+| `/openspec:apply` | Implement approved change |
+| `/openspec:archive` | Archive deployed change |
+
+See `docs/RUNAI_QUICK_REFERENCE.md` for command examples.
