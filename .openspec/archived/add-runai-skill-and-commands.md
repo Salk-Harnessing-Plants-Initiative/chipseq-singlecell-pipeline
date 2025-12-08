@@ -2,9 +2,10 @@
 
 **Change ID**: `add-runai-skill-and-commands`
 **Created**: 2025-12-05
-**Status**: Implemented
+**Status**: Archived
 **Approved**: 2025-12-08
 **Implemented**: 2025-12-08
+**Archived**: 2025-12-08
 
 ## Summary
 
