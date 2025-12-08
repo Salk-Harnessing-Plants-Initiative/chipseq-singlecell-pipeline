@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(runai *)",
+      "Bash(docker *)",
+      "Bash(./scripts/*.sh*)",
+      "Bash(shellcheck *)",
+      "Bash(gh *)"
+    ]
+  }
+}
