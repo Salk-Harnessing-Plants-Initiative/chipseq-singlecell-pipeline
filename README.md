@@ -19,9 +19,9 @@ Docker container for ChIP-seq and single-cell RNA-seq analysis, optimized for de
 ### Single-Cell Analysis (Python)
 - **scanpy** - Single-cell analysis framework
 - **anndata** - Data structures for single-cell
-- **scvi-tools** - Deep learning for single-cell
 - **leidenalg** - Community detection
 - **bbknn** - Batch correction
+- **harmonypy** - Batch correction
 
 ### Single-Cell Analysis (R)
 - **Seurat** - Single-cell analysis
@@ -91,6 +91,22 @@ cd /data
 ## Single-Cell Analysis
 
 ### Python (Scanpy)
+
+Use `uv run` to execute Python commands:
+
+```bash
+# Run Python interactively
+uv run python
+
+# Run a script
+uv run python /data/analysis.py
+
+# Run Python tools
+uv run multiqc .
+uv run cutadapt --help
+```
+
+Example scanpy workflow:
 
 ```python
 import scanpy as sc

@@ -143,7 +143,7 @@ WORKDIR /opt/python-env
 COPY pyproject.toml .
 
 # Install Python packages using uv sync (best practice)
-# Uses CPU-only PyTorch as configured in pyproject.toml
+# Dependencies defined in pyproject.toml
 RUN uv sync --python 3.11 \
     && rm -rf /root/.cache/uv
 
@@ -233,7 +233,8 @@ ENV PATH="/opt/cellranger:${PATH}"
 FROM cellranger-env AS runtime
 
 # Install VS Code CLI for Remote Tunnel
-RUN curl -fsSL "https://code.visualstudio.com/sha/download?build=stable&os=cli-linux-x64" -o /tmp/vscode_cli.tar.gz \
+# Use the direct download URL which is more stable
+RUN curl -fsSL "https://update.code.visualstudio.com/latest/cli-linux-x64/stable" -o /tmp/vscode_cli.tar.gz \
     && tar -xzf /tmp/vscode_cli.tar.gz -C /usr/local/bin \
     && rm /tmp/vscode_cli.tar.gz
 

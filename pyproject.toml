@@ -13,7 +13,6 @@ dependencies = [
     # Core single-cell
     "scanpy",
     "anndata",
-    "scvi-tools",
     # Clustering and visualization
     "leidenalg",
     "umap-learn",
@@ -41,14 +40,3 @@ dependencies = [
     "tqdm",
     "rich",
 ]
-
-[tool.uv]
-# Use CPU-only PyTorch to avoid huge CUDA dependencies
-# GPU support is provided at runtime on RunAI
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[tool.uv.sources]
-torch = { index = "pytorch-cpu" }

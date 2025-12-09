@@ -4,8 +4,8 @@
 # ==============================================================================
 set -euo pipefail
 
-# Activate virtual environment
-source /opt/venv/bin/activate
+# Change to the uv project directory for uv run to work
+cd /opt/python-env
 
 # Handle commands
 case "${1:-bash}" in
@@ -16,7 +16,12 @@ case "${1:-bash}" in
         ;;
     jupyter|lab)
         echo "Starting JupyterLab..."
-        exec jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+        exec uv run jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+        ;;
+    python)
+        # Run Python with uv
+        shift
+        exec uv run python "$@"
         ;;
     help|--help|-h)
         cat << 'EOF'
@@ -29,7 +34,22 @@ COMMANDS:
     bash            Start interactive bash shell (default)
     tunnel          Start VS Code Remote Tunnel
     jupyter         Start JupyterLab server
+    python          Run Python with uv (e.g., python script.py)
     help            Show this help message
+
+PYTHON (using uv):
+    # Run Python script
+    uv run python script.py
+
+    # Run Python tool
+    uv run cutadapt --help
+    uv run multiqc .
+
+    # Interactive Python
+    uv run python
+
+    # Add package at runtime
+    uv add package-name
 
 EXAMPLES:
     # Interactive shell
@@ -41,10 +61,13 @@ EXAMPLES:
     # JupyterLab
     docker run -p 8888:8888 <image> jupyter
 
+    # Run Python script
+    docker run -v /data:/data <image> python /data/analysis.py
+
 AVAILABLE TOOLS:
     ChIP-seq:       trim_galore, bowtie2, samtools, findPeaks, makeTagDirectory,
                     makeUCSCfile, igvtools, fastqc, cutadapt, multiqc, deeptools
-    Single-cell:    scanpy, anndata, scvi-tools, Seurat
+    Single-cell:    scanpy, anndata, bbknn, harmonypy, Seurat
     General:        parallel, R, python, uv
 
 CHIP-SEQ SCRIPTS:
