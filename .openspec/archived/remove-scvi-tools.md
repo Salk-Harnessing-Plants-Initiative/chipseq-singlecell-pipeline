@@ -2,8 +2,9 @@
 
 **Change ID**: `remove-scvi-tools`
 **Created**: 2025-12-09
-**Status**: Approved
+**Status**: Implemented
 **Approved**: 2025-12-09
+**Implemented**: 2025-12-09
 
 ## Summary
 
