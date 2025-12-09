@@ -144,6 +144,10 @@ RUN uv venv /opt/venv --python 3.11
 ENV VIRTUAL_ENV="/opt/venv" \
     PATH="/opt/venv/bin:${PATH}"
 
+# Install PyTorch CPU-only first (avoids huge CUDA deps during build)
+# GPU support can be added at runtime by mounting NVIDIA libraries
+RUN uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+
 # Install single-cell Python packages
 RUN uv pip install \
     # Core single-cell
@@ -175,7 +179,8 @@ RUN uv pip install \
     deeptools \
     # Utilities
     tqdm \
-    rich
+    rich \
+    && rm -rf /root/.cache/uv
 
 # Install TrimGalore
 RUN curl -fsSL https://github.com/FelixKrueger/TrimGalore/archive/refs/tags/0.6.10.tar.gz -o trimgalore.tar.gz \
