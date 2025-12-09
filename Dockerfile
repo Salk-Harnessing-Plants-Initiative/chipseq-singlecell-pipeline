@@ -135,9 +135,8 @@ ENV PATH="/opt/fastqc:${PATH}"
 FROM chipseq-tools AS python-env
 
 # Install uv
-ENV UV_INSTALL_DIR="/opt/uv"
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/opt/uv/bin:/root/.local/bin:${PATH}"
+RUN curl -LsSf https://astral.sh/uv/install.sh | env CARGO_HOME=/opt/uv UV_INSTALL_DIR=/opt/uv sh
+ENV PATH="/opt/uv:/opt/uv/bin:/root/.local/bin:${PATH}"
 
 # Create virtual environment and install Python packages
 WORKDIR /opt/python-env
