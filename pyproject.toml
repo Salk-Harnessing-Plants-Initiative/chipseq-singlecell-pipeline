@@ -1,0 +1,54 @@
+[project]
+name = "chipseq-singlecell-pipeline"
+version = "1.0.0"
+description = "ChIP-seq and single-cell RNA-seq analysis environment"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Salk Harnessing Plants Initiative"}
+]
+
+dependencies = [
+    # Core single-cell
+    "scanpy",
+    "anndata",
+    "scvi-tools",
+    # Clustering and visualization
+    "leidenalg",
+    "umap-learn",
+    # Batch correction
+    "bbknn",
+    "harmonypy",
+    # Data handling
+    "pandas",
+    "numpy",
+    "scipy",
+    "h5py",
+    "tables",
+    # Visualization
+    "matplotlib",
+    "seaborn",
+    "plotly",
+    # Jupyter support
+    "jupyterlab",
+    "ipykernel",
+    # ChIP-seq tools
+    "cutadapt",
+    "multiqc",
+    "deeptools",
+    # Utilities
+    "tqdm",
+    "rich",
+]
+
+[tool.uv]
+# Use CPU-only PyTorch to avoid huge CUDA dependencies
+# GPU support is provided at runtime on RunAI
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }

@@ -138,49 +138,17 @@ FROM chipseq-tools AS python-env
 RUN curl -LsSf https://astral.sh/uv/install.sh | env CARGO_HOME=/opt/uv UV_INSTALL_DIR=/opt/uv sh
 ENV PATH="/opt/uv:/opt/uv/bin:/root/.local/bin:${PATH}"
 
-# Create virtual environment and install Python packages
+# Set up Python environment with uv
 WORKDIR /opt/python-env
-RUN uv venv /opt/venv --python 3.11
-ENV VIRTUAL_ENV="/opt/venv" \
-    PATH="/opt/venv/bin:${PATH}"
+COPY pyproject.toml .
 
-# Install PyTorch CPU-only first (avoids huge CUDA deps during build)
-# GPU support can be added at runtime by mounting NVIDIA libraries
-RUN uv pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-# Install single-cell Python packages
-RUN uv pip install \
-    # Core single-cell
-    scanpy \
-    anndata \
-    scvi-tools \
-    # Clustering and visualization
-    leidenalg \
-    umap-learn \
-    # Batch correction
-    bbknn \
-    harmonypy \
-    # Data handling
-    pandas \
-    numpy \
-    scipy \
-    h5py \
-    tables \
-    # Visualization
-    matplotlib \
-    seaborn \
-    plotly \
-    # Jupyter support
-    jupyterlab \
-    ipykernel \
-    # ChIP-seq tools
-    cutadapt \
-    multiqc \
-    deeptools \
-    # Utilities
-    tqdm \
-    rich \
+# Install Python packages using uv sync (best practice)
+# Uses CPU-only PyTorch as configured in pyproject.toml
+RUN uv sync --python 3.11 \
     && rm -rf /root/.cache/uv
+
+ENV VIRTUAL_ENV="/opt/python-env/.venv" \
+    PATH="/opt/python-env/.venv/bin:${PATH}"
 
 # Install TrimGalore
 RUN curl -fsSL https://github.com/FelixKrueger/TrimGalore/archive/refs/tags/0.6.10.tar.gz -o trimgalore.tar.gz \
