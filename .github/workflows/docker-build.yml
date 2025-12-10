@@ -8,6 +8,7 @@ on:
       - 'v*.*.*'
     paths:
       - 'Dockerfile'
+      - 'pyproject.toml'
       - 'scripts/**'
       - '.github/workflows/docker-build.yml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - '**'
     paths:
       - 'Dockerfile'
+      - 'pyproject.toml'
       - 'scripts/**'
       - '.github/workflows/docker-build.yml'
   workflow_dispatch:
@@ -43,6 +45,29 @@ jobs:
       is-prod: ${{ steps.determine-env.outputs.is-prod }}
 
     steps:
+      - name: Free up disk space
+        run: |
+          echo "::group::Disk space before cleanup"
+          df -h
+          echo "::endgroup::"
+
+          echo "::group::Removing unnecessary software"
+          # Remove large pre-installed software to free up space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+          # Clean apt cache
+          sudo apt-get clean
+          echo "::endgroup::"
+
+          echo "::group::Disk space after cleanup"
+          df -h
+          echo "::endgroup::"
+
       - name: Checkout repository
         uses: actions/checkout@v5
 
@@ -181,7 +206,7 @@ jobs:
           docker run --rm --entrypoint bash ${{ steps.image-ref.outputs.image-tag }} -c "
             echo 'Testing uv...' && uv --version
             echo 'Testing Python imports...'
-            python -c 'import scanpy; import anndata; import scvi; print(\"Single-cell Python packages OK\")'
+            python -c 'import scanpy; import anndata; import bbknn; import harmonypy; print(\"Single-cell Python packages OK\")'
           "
           echo "::endgroup::"
 
@@ -213,7 +238,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Tests Passed:**" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ ChIP-seq tools (bowtie2, samtools, trim_galore, HOMER, fastqc)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Python environment (uv, scanpy, anndata, scvi-tools)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Python environment (uv, scanpy, anndata, bbknn, harmonypy)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ R environment (Seurat)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ VS Code CLI" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Entrypoint script" >> $GITHUB_STEP_SUMMARY
