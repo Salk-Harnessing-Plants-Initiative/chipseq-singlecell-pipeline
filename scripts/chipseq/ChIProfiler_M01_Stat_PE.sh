@@ -11,12 +11,12 @@ cpu_core=${1:-12} # how many cpu cores used in parallel
 ################################# output 1_res_read_mapping_stat.txt
 
 # trimming info
-> trim_info_R1.txt
+: > trim_info_R1.txt
 for file in `cat fastqList.txt`; do echo $file\_R1.fastq.gz_trimming_report.txt; cat $file\_R1.fastq.gz_trimming_report.txt ; done > trim_info_R1.txt
 awk '/Total reads processed:/ {print $4}' trim_info_R1.txt > trim_info_R1_raw_reads.txt
 awk '/Reads with adapters:/ {print $4,$5}' trim_info_R1.txt > trim_info_R1_reads_wAdapters.txt
 awk '/Reads written/ {print $5,$6}' trim_info_R1.txt > trim_info_R1_reads_writen.txt
-> trim_info_R2.txt
+: > trim_info_R2.txt
 for file in `cat fastqList.txt`; do echo $file\_R2.fastq.gz_trimming_report.txt; cat $file\_R2.fastq.gz_trimming_report.txt ; done > trim_info_R2.txt
 awk '/Total reads processed:/ {print $4}' trim_info_R2.txt > trim_info_R2_raw_reads.txt
 awk '/Reads with adapters:/ {print $4,$5}' trim_info_R2.txt > trim_info_R2_reads_wAdapters.txt
@@ -71,7 +71,7 @@ while read sample; do
 done < fastqList.txt > numbers_sorted_uniq_total_read.txt
 
 rm -rf tmp_counts && mkdir tmp_counts
-> numbers_sorted_uniq_mapped_read.txt
+: > numbers_sorted_uniq_mapped_read.txt
 parallel -N1 -j $cpu_core 'samtools view -c -F 260 {}_sorted_uniq.bam > tmp_counts/{}.txt' ::: `cat fastqList.txt`
 while read sample; do
     cat tmp_counts/${sample}.txt
